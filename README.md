@@ -41,13 +41,15 @@ This app is a plain static site, so GitHub Pages is the easiest way to host it.
 1. Merge this branch to `main`, or copy the workflow in `.github/workflows/deploy-pages.yml` onto whatever branch deploys to `main`.
 2. In GitHub, open the repository settings.
 3. Go to `Settings > Pages`.
-4. Under `Build and deployment`, choose `GitHub Actions` as the source.
-5. Push to `main`.
-6. Wait for the `Deploy GitHub Pages` workflow to finish.
-7. Open the Pages URL GitHub shows you, usually `https://joshepperly45.github.io/softball2026/`.
+4. Enable GitHub Pages for the repository if it is not already enabled.
+5. Under `Build and deployment`, choose `GitHub Actions` as the source.
+6. Push to `main`.
+7. Wait for the `Deploy GitHub Pages` workflow to finish.
+8. Open the Pages URL GitHub shows you, usually `https://joshepperly45.github.io/softball2026/`.
 
 Notes:
 
+- The workflow can deploy the site, but GitHub may require the Pages feature itself to be turned on once manually in repo settings first.
 - Because the app uses browser local storage, saved games and roster data stay in the browser/device you use on the Pages site.
 - If you switch devices, use the app's per-game JSON files or full backup export/import to move data.
 - Once Pages is enabled, you do not need to run `npm run serve` from your PC to use the site.
