@@ -7,9 +7,9 @@ import {
 } from "./gameLogic.js";
 
 const STORAGE_KEYS = {
-  roster: "softball2026-roster",
-  savedGames: "softball2026-saved-games",
-  currentGame: "softball2026-current-game",
+  roster: "softball-roster",
+  savedGames: "softball-saved-games",
+  currentGame: "softball-current-game",
 };
 
 const state = {

@@ -109,6 +109,7 @@ function createPlayerGameLine() {
 function applyHit(state, basesToAdvance, batter, offense) {
   const previous = cloneBases(state.bases);
   const runsScored = [];
+  const nextBases = createBases();
 
   if (previous.third) {
     scoreRunner(state, previous.third, batter.id, offense, runsScored, 1);
@@ -116,36 +117,28 @@ function applyHit(state, basesToAdvance, batter, offense) {
   if (basesToAdvance >= 2 && previous.second) {
     scoreRunner(state, previous.second, batter.id, offense, runsScored, 1);
   } else if (previous.second) {
-    state.bases.third = previous.second;
-  } else {
-    state.bases.third = null;
+    nextBases.third = previous.second;
   }
 
   if (basesToAdvance >= 3 && previous.first) {
     scoreRunner(state, previous.first, batter.id, offense, runsScored, 1);
   } else if (basesToAdvance >= 2 && previous.first) {
-    state.bases.third = previous.first;
+    nextBases.third = previous.first;
   } else if (previous.first) {
-    state.bases.second = previous.first;
-  } else {
-    state.bases.second = state.bases.second ?? null;
+    nextBases.second = previous.first;
   }
 
   if (basesToAdvance === 1) {
-    state.bases.second = previous.first;
-    state.bases.first = batter;
+    nextBases.first = batter;
   } else if (basesToAdvance === 2) {
-    state.bases.first = null;
-    state.bases.second = batter;
+    nextBases.second = batter;
   } else if (basesToAdvance === 3) {
-    state.bases.first = null;
-    state.bases.second = null;
-    state.bases.third = batter;
+    nextBases.third = batter;
   } else {
-    state.bases = createBases();
     scoreRunner(state, batter, batter.id, offense, runsScored, 1);
   }
 
+  state.bases = basesToAdvance === 4 ? createBases() : nextBases;
   return runsScored;
 }
 
@@ -339,6 +332,10 @@ export function buildPlayerStats(roster, games) {
         plateAppearances: 0,
         atBats: 0,
         hits: 0,
+        singles: 0,
+        doubles: 0,
+        triples: 0,
+        homeRuns: 0,
         walks: 0,
         runs: 0,
         rbi: 0,
@@ -356,14 +353,14 @@ export function buildPlayerStats(roster, games) {
       current.plateAppearances += line.plateAppearances;
       current.atBats += line.atBats;
       current.hits += line.hits;
+      current.singles += line.singles;
+      current.doubles += line.doubles;
+      current.triples += line.triples;
+      current.homeRuns += line.homeRuns;
       current.walks += line.walks;
       current.runs += line.runs;
       current.rbi += line.rbi;
-      current.totalBases +=
-        line.singles +
-        line.doubles * 2 +
-        line.triples * 3 +
-        line.homeRuns * 4;
+      current.totalBases += line.singles + line.doubles * 2 + line.triples * 3 + line.homeRuns * 4;
     }
   }
 

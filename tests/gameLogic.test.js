@@ -86,6 +86,8 @@ test("player stats aggregate saved game production", () => {
 
   assert.equal(stats[0].name, "Alex");
   assert.equal(stats[0].hits, 2);
+  assert.equal(stats[0].singles, 1);
+  assert.equal(stats[0].homeRuns, 1);
   assert.equal(stats[0].avg, "1.000");
   assert.equal(stats[1].walks, 1);
 });
