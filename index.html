@@ -153,27 +153,6 @@
           <div class="grid tracker-grid">
             <div class="stack">
               <div class="card" id="at-bat-card"></div>
-              <div class="card">
-                <h3>Manual game adjustment</h3>
-                <form id="state-adjust-form" class="stack">
-                  <div class="grid two-up">
-                    <label>
-                      <span>Current hitter</span>
-                      <select id="current-hitter" name="batterIndex"></select>
-                    </label>
-                    <label>
-                      <span>Outs</span>
-                      <select id="current-outs" name="outs">
-                        <option value="0">0</option>
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                      </select>
-                    </label>
-                  </div>
-                  <button type="submit">Apply adjustment</button>
-                </form>
-                <p id="state-adjust-message" class="message" role="status"></p>
-              </div>
               <div class="card hidden" id="edit-panel">
                 <h3>Edit event</h3>
                 <form id="edit-form" class="stack">
@@ -254,6 +233,27 @@
           <div class="card tracker-log-card">
             <h3>Game log</h3>
             <ul id="event-log" class="event-log"></ul>
+          </div>
+          <div class="card">
+            <h3>Manual game adjustment</h3>
+            <form id="state-adjust-form" class="stack">
+              <div class="grid two-up">
+                <label>
+                  <span>Current hitter</span>
+                  <select id="current-hitter" name="batterIndex"></select>
+                </label>
+                <label>
+                  <span>Outs</span>
+                  <select id="current-outs" name="outs">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                  </select>
+                </label>
+              </div>
+              <button type="submit">Apply adjustment</button>
+            </form>
+            <p id="state-adjust-message" class="message" role="status"></p>
           </div>
         </div>
       </section>
