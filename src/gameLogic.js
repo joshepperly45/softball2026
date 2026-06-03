@@ -18,6 +18,13 @@ const HIT_TOTALS = {
   homeRun: 4,
 };
 
+const HIT_STAT_KEYS = {
+  single: "singles",
+  double: "doubles",
+  triple: "triples",
+  homeRun: "homeRuns",
+};
+
 function createBases() {
   return { first: null, second: null, third: null };
 }
@@ -145,14 +152,26 @@ function applyHit(state, basesToAdvance, batter, offense) {
 function applyWalk(state, batter, offense, isError = false) {
   const previous = cloneBases(state.bases);
   const runsScored = [];
+  const nextBases = createBases();
 
   if (previous.first && previous.second && previous.third) {
     scoreRunner(state, previous.third, isError ? null : batter.id, offense, runsScored, isError ? 0 : 1);
   }
 
-  state.bases.third = previous.second || previous.third;
-  state.bases.second = previous.first || previous.second;
-  state.bases.first = batter;
+  if (previous.first) {
+    nextBases.second = previous.first;
+    if (previous.second) {
+      nextBases.third = previous.second;
+    } else {
+      nextBases.third = previous.third;
+    }
+  } else {
+    nextBases.second = previous.second;
+    nextBases.third = previous.third;
+  }
+
+  nextBases.first = batter;
+  state.bases = nextBases;
   return runsScored;
 }
 
@@ -222,7 +241,7 @@ export function applyPlay(game, playKey) {
       runsScored = applyHit(state, HIT_TOTALS[playKey], batter, offense);
       if (batterLine) {
         batterLine.hits += 1;
-        batterLine[`${playKey === "homeRun" ? "homeRuns" : `${playKey}s`}`] += 1;
+        batterLine[HIT_STAT_KEYS[playKey]] += 1;
       }
       break;
     case "walk":

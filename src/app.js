@@ -334,7 +334,7 @@ function renderTracker() {
               <div class="muted">
                 ${escapeHtml(event.offense === "home" ? game.homeTeamName : game.awayTeamName)}
                 ${event.scoreAfterPlay.home}-${event.scoreAfterPlay.away}
-                ${event.runsScored.length ? `· ${event.runsScored.length} run scored` : ""}
+              ${event.runsScored.length ? `· ${event.runsScored.length} run${event.runsScored.length !== 1 ? "s" : ""} scored` : ""}
               </div>
             </li>
           `,

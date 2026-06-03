@@ -44,6 +44,19 @@ test("walk forces in a run with the bases loaded", () => {
   assert.equal(updated.bases.third?.name, "Casey");
 });
 
+test("walk only moves runners who are forced", () => {
+  const game = createSampleGame();
+  game.bases.second = { id: "a2", name: "Blake" };
+  game.bases.third = { id: "a3", name: "Casey" };
+
+  const updated = applyPlay(game, "walk");
+
+  assert.equal(updated.score.away, 0);
+  assert.equal(updated.bases.first?.name, "Alex");
+  assert.equal(updated.bases.second?.name, "Blake");
+  assert.equal(updated.bases.third?.name, "Casey");
+});
+
 test("three outs flips the inning and clears the bases", () => {
   let game = createSampleGame();
 
