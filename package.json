@@ -1,8 +1,9 @@
 {
-  "name": "softball2026",
+  "name": "swanvegas-softball-tracker",
   "version": "1.0.0",
-  "description": "Static softball roster and scorebook tracker",
+  "description": "SwanVegas Softball coed ASA roster and scorebook tracker",
   "scripts": {
+    "serve": "node ./scripts/serve.mjs",
     "test": "node --test"
   },
   "repository": {
