@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Softball 2026 Tracker</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Softball 2026</p>
+        <h1>Roster, lineup, scorebook, and stats in one place</h1>
+        <p class="hero-copy">
+          Manage your roster, build a legal lineup, and score a game batter by batter with automatic stats.
+        </p>
+      </div>
+      <nav class="tabs" aria-label="Primary views">
+        <button class="tab active" data-tab="roster">Roster</button>
+        <button class="tab" data-tab="setup">Game setup</button>
+        <button class="tab" data-tab="tracker">Tracker</button>
+        <button class="tab" data-tab="stats">Stats</button>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section id="tab-roster" class="panel tab-panel active">
+        <div class="panel-header">
+          <h2>Roster manager</h2>
+          <p>Store players with their preferred positions and gender for future games.</p>
+        </div>
+        <form id="roster-form" class="stack">
+          <div class="grid two-up">
+            <label>
+              <span>Player name</span>
+              <input name="name" required maxlength="40" />
+            </label>
+            <label>
+              <span>Gender</span>
+              <select name="gender" required>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Non-binary">Non-binary</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            <span>Preferred positions</span>
+            <input
+              name="positions"
+              placeholder="e.g. P, 2B, SS, OF"
+              maxlength="80"
+            />
+          </label>
+          <button type="submit" class="primary">Add player</button>
+        </form>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Gender</th>
+                <th>Preferred positions</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="roster-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="tab-setup" class="panel tab-panel">
+        <div class="panel-header">
+          <h2>Game setup</h2>
+          <p>Build the daily lineup, define lineup rules, and start a new game.</p>
+        </div>
+        <div class="grid two-column">
+          <form id="setup-form" class="stack">
+            <div class="grid two-up">
+              <label>
+                <span>Your team name</span>
+                <input name="teamName" value="Softball 2026" required maxlength="40" />
+              </label>
+              <label>
+                <span>Opponent</span>
+                <input name="opponentName" value="Opponent" required maxlength="40" />
+              </label>
+            </div>
+            <div class="grid three-up">
+              <label>
+                <span>Your side</span>
+                <select name="teamSide">
+                  <option value="home">Home</option>
+                  <option value="away">Away</option>
+                </select>
+              </label>
+              <label>
+                <span>Minimum lineup size</span>
+                <input type="number" name="minPlayers" min="1" value="10" />
+              </label>
+              <label>
+                <span>Minimum female players</span>
+                <input type="number" name="minFemales" min="0" value="0" />
+              </label>
+            </div>
+            <label>
+              <span>Opponent batting order (optional, one per line)</span>
+              <textarea
+                name="opponentLineup"
+                rows="5"
+                placeholder="Opponent 1&#10;Opponent 2&#10;Opponent 3"
+              ></textarea>
+            </label>
+            <button type="submit" class="primary">Start game</button>
+            <p id="setup-message" class="message" role="status"></p>
+          </form>
+
+          <div class="stack">
+            <div class="lineup-builder">
+              <div class="panel-header compact">
+                <h3>Daily lineup</h3>
+                <p>Add players from the roster in batting order.</p>
+              </div>
+              <div id="lineup-pool" class="chip-list"></div>
+              <ol id="daily-lineup" class="lineup-list"></ol>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-tracker" class="panel tab-panel">
+        <div class="panel-header">
+          <h2>In-game tracker</h2>
+          <p>Score each plate appearance with common scorebook outcomes and live baserunner movement.</p>
+        </div>
+        <div id="tracker-empty" class="empty-state">
+          Start a game from the setup tab to unlock live scoring.
+        </div>
+        <div id="tracker-content" class="stack hidden">
+          <div class="scoreboard" id="scoreboard"></div>
+          <div class="grid tracker-grid">
+            <div class="stack">
+              <div class="card" id="at-bat-card"></div>
+              <div class="card">
+                <h3>Record play</h3>
+                <div id="play-buttons" class="play-grid"></div>
+              </div>
+              <div class="card">
+                <h3>Substitutions</h3>
+                <form id="sub-form" class="stack">
+                  <div class="grid two-up">
+                    <label>
+                      <span>Team</span>
+                      <select name="team">
+                        <option value="home">Home</option>
+                        <option value="away">Away</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Lineup spot</span>
+                      <select name="lineupIndex" id="sub-lineup-index"></select>
+                    </label>
+                  </div>
+                  <label>
+                    <span>New player</span>
+                    <input name="playerName" maxlength="40" required />
+                  </label>
+                  <button type="submit">Apply substitution</button>
+                </form>
+              </div>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <h3>Game log</h3>
+                <ul id="event-log" class="event-log"></ul>
+              </div>
+              <div class="card">
+                <button id="finish-game" class="primary">Finish and save game</button>
+                <p class="helper">Saved games feed the stats tab automatically.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-stats" class="panel tab-panel">
+        <div class="panel-header">
+          <h2>Player stats</h2>
+          <p>View aggregate hitting stats from every saved game.</p>
+        </div>
+        <div id="stats-summary" class="stats-summary"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>PA</th>
+                <th>AB</th>
+                <th>H</th>
+                <th>BB</th>
+                <th>R</th>
+                <th>RBI</th>
+                <th>AVG</th>
+                <th>OBP</th>
+                <th>SLG</th>
+                <th>OPS</th>
+              </tr>
+            </thead>
+            <tbody id="stats-table"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
