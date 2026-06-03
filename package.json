@@ -1,0 +1,21 @@
+{
+  "name": "swanvegas-softball-tracker",
+  "version": "1.0.0",
+  "description": "SwanVegas Softball coed ASA roster and scorebook tracker",
+  "scripts": {
+    "serve": "node ./scripts/serve.mjs",
+    "test": "node --test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joshepperly45/softball2026.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/joshepperly45/softball2026/issues"
+  },
+  "homepage": "https://github.com/joshepperly45/softball2026#readme"
+}

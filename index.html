@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SwanVegas Softball Tracker</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div>
+        <p class="eyebrow">SwanVegas Softball</p>
+        <h1>Roster, lineup, scorebook, and stats in one place</h1>
+        <p class="hero-copy">
+          Validate ASA coed lineups, track your offense plate by plate, and enter opponent runs by inning.
+        </p>
+      </div>
+      <nav class="tabs" aria-label="Primary views">
+        <button class="tab active" data-tab="roster">Roster</button>
+        <button class="tab" data-tab="setup">Game setup</button>
+        <button class="tab" data-tab="tracker">Tracker</button>
+        <button class="tab" data-tab="stats">Stats</button>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section id="tab-roster" class="panel tab-panel active">
+        <div class="panel-header">
+          <h2>Roster manager</h2>
+          <p>Store players with their preferred positions and gender for future games.</p>
+        </div>
+        <form id="roster-form" class="stack">
+          <div class="grid two-up">
+            <label>
+              <span>Player name</span>
+              <input name="name" required maxlength="40" />
+            </label>
+            <label>
+              <span>Gender</span>
+              <select name="gender" required>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Non-binary">Non-binary</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            <span>Preferred positions</span>
+            <input
+              name="positions"
+              placeholder="e.g. P, 2B, SS, OF"
+              maxlength="80"
+            />
+          </label>
+          <button type="submit" class="primary">Add player</button>
+        </form>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Gender</th>
+                <th>Preferred positions</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="roster-table"></tbody>
+          </table>
+        </div>
+        <div class="card storage-card">
+          <div class="panel-header compact">
+            <h3>Storage and backup</h3>
+            <p>Data auto-saves in this browser. Export a JSON backup to your PC and import it later on any machine.</p>
+          </div>
+          <div class="button-row">
+            <button id="export-data" type="button">Export data</button>
+            <button id="import-data" type="button">Import data</button>
+          </div>
+          <input id="import-file" type="file" accept="application/json,.json" class="hidden" />
+          <p id="storage-message" class="message" role="status"></p>
+        </div>
+      </section>
+
+      <section id="tab-setup" class="panel tab-panel">
+        <div class="panel-header">
+          <h2>Game setup</h2>
+          <p>Build the batting order, assign game positions, and validate the ASA gender rules.</p>
+        </div>
+        <div class="grid two-column">
+          <form id="setup-form" class="stack">
+            <div class="grid two-up">
+              <label>
+                <span>Your team name</span>
+                <input name="teamName" value="SwanVegas Softball" required maxlength="40" />
+              </label>
+              <label>
+                <span>Opponent</span>
+                <input name="opponentName" value="Opponent" required maxlength="40" />
+              </label>
+            </div>
+            <div class="grid two-up">
+              <label>
+                <span>Your side</span>
+                <select name="teamSide">
+                  <option value="home">Home</option>
+                  <option value="away">Away</option>
+                </select>
+              </label>
+            </div>
+            <div class="card rule-card">
+              <h3>ASA lineup rules</h3>
+              <ul class="rule-list">
+                <li>Use exactly 10 or 12 players.</li>
+                <li>Girls must hit 3rd, 6th, and 9th. A 12-player lineup also requires a girl hitting 12th.</li>
+                <li>Defense must include at least one female infielder and one female outfielder.</li>
+                <li>In a 12-player lineup, one male and one female must be marked DH.</li>
+              </ul>
+            </div>
+            <div class="card summary-card-block">
+              <div class="panel-header compact">
+                <h3>Lineup summary</h3>
+                <p>See whether the batting order and field assignments are already legal before you start.</p>
+              </div>
+              <div id="lineup-summary" class="lineup-summary"></div>
+            </div>
+            <button type="submit" class="primary">Start game</button>
+            <p id="setup-message" class="message" role="status"></p>
+          </form>
+
+          <div class="stack">
+            <div class="lineup-builder">
+              <div class="panel-header compact">
+                <h3>Daily lineup</h3>
+                <p>Add up to 12 roster players in batting order, then assign each slot a game position.</p>
+              </div>
+              <div id="lineup-pool" class="chip-list"></div>
+              <ol id="daily-lineup" class="lineup-list"></ol>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-tracker" class="panel tab-panel">
+        <div class="panel-header">
+          <h2>In-game tracker</h2>
+          <p>Track only your team’s plate appearances, then enter opponent runs at the end of each half inning.</p>
+        </div>
+        <div id="tracker-empty" class="empty-state">
+          Start a game from the setup tab to unlock live scoring.
+        </div>
+        <div id="tracker-content" class="stack hidden">
+          <div class="scoreboard" id="scoreboard"></div>
+          <div class="grid tracker-grid">
+            <div class="stack">
+              <div class="card" id="at-bat-card"></div>
+              <div class="card">
+                <h3>Manual game adjustment</h3>
+                <form id="state-adjust-form" class="stack">
+                  <div class="grid two-up">
+                    <label>
+                      <span>Current hitter</span>
+                      <select id="current-hitter" name="batterIndex"></select>
+                    </label>
+                    <label>
+                      <span>Outs</span>
+                      <select id="current-outs" name="outs">
+                        <option value="0">0</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                      </select>
+                    </label>
+                  </div>
+                  <button type="submit">Apply adjustment</button>
+                </form>
+                <p id="state-adjust-message" class="message" role="status"></p>
+              </div>
+              <div class="card hidden" id="edit-panel">
+                <h3>Edit event</h3>
+                <form id="edit-form" class="stack">
+                  <div id="edit-fields" class="stack"></div>
+                  <div class="button-row">
+                    <button type="submit" class="primary">Save change</button>
+                    <button type="button" id="cancel-edit">Cancel</button>
+                  </div>
+                </form>
+                <p id="edit-message" class="message" role="status"></p>
+              </div>
+            </div>
+            <div class="stack">
+              <div class="card">
+                <h3 id="action-panel-title">Your offense</h3>
+                <p id="tracker-message" class="message" role="status"></p>
+                <div class="stack" id="team-offense-panel">
+                  <div class="grid two-up">
+                    <label>
+                      <span>RBI on this play</span>
+                      <input id="play-rbi" type="number" min="0" max="4" value="0" />
+                    </label>
+                    <label>
+                      <span>Extra runner outs on this play</span>
+                      <input id="play-extra-outs" type="number" min="0" max="3" value="0" />
+                    </label>
+                  </div>
+                  <div id="play-buttons" class="play-grid"></div>
+                  <div class="button-row">
+                    <button data-undo-last type="button">Undo last event</button>
+                  </div>
+                </div>
+                <div id="opponent-panel" class="stack hidden">
+                  <h3>Opponent half inning</h3>
+                  <form id="opponent-form" class="stack">
+                    <label>
+                      <span>Runs scored this half inning</span>
+                      <input id="opponent-runs" name="runs" type="number" min="0" value="0" />
+                    </label>
+                    <button type="submit" class="primary">Finalize opponent inning</button>
+                  </form>
+                  <p id="opponent-message" class="message" role="status"></p>
+                </div>
+              </div>
+              <div class="card">
+                <h3>Partner substitutions</h3>
+                <form id="sub-form" class="stack">
+                  <div class="grid two-up">
+                    <label>
+                      <span>Lineup spot</span>
+                      <select name="lineupIndex" id="sub-lineup-index"></select>
+                    </label>
+                    <label>
+                      <span>Partner player</span>
+                      <select name="playerId" id="sub-player-id"></select>
+                    </label>
+                  </div>
+                  <label>
+                    <span class="checkbox-row">
+                      <input name="injury" type="checkbox" />
+                      <span>Injury override</span>
+                    </span>
+                  </label>
+                  <button type="submit">Apply substitution</button>
+                </form>
+                <p id="sub-message" class="message" role="status"></p>
+                <p class="helper">A player must complete an at-bat and a defensive inning before a normal partner swap.</p>
+              </div>
+              <div class="card">
+                <div class="button-row">
+                  <button id="undo-last" data-undo-last type="button">Undo last event</button>
+                  <button id="finish-game" type="button" class="primary">Finish and save game</button>
+                </div>
+                <p class="helper">You can end the game at any time. Saved games feed the stats tab automatically.</p>
+              </div>
+            </div>
+          </div>
+          <div class="card tracker-log-card">
+            <h3>Game log</h3>
+            <ul id="event-log" class="event-log"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-stats" class="panel tab-panel">
+        <div class="panel-header">
+          <h2>Player stats</h2>
+          <p>View aggregate hitting stats from every saved game.</p>
+        </div>
+        <div id="stats-summary" class="stats-summary"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th><button type="button" class="sort-button" data-sort-key="name">Player</button></th>
+                <th><button type="button" class="sort-button" data-sort-key="gamesPlayed">GP</button></th>
+                <th><button type="button" class="sort-button" data-sort-key="plateAppearances">PA</button></th>
+                <th><button type="button" class="sort-button" data-sort-key="atBats">AB</button></th>
+                <th><button type="button" class="sort-button" data-sort-key="hits">H</button></th>
+                <th><button type="button" class="sort-button" data-sort-key="walks">BB</button></th>
+                <th><button type="button" class="sort-button" data-sort-key="runs">R</button></th>
+                <th><button type="button" class="sort-button" data-sort-key="rbi">RBI</button></th>
+                <th><button type="button" class="sort-button" data-sort-key="avg">AVG</button></th>
+                <th><button type="button" class="sort-button" data-sort-key="obp">OBP</button></th>
+                <th><button type="button" class="sort-button" data-sort-key="slg">SLG</button></th>
+                <th><button type="button" class="sort-button" data-sort-key="ops">OPS</button></th>
+              </tr>
+            </thead>
+            <tbody id="stats-table"></tbody>
+          </table>
+        </div>
+        <div class="grid two-column">
+          <div class="card">
+            <div class="panel-header compact">
+              <h3>Saved games</h3>
+              <p>Completed games stay on this device, download as local game files when you finish them, and can be reloaded later.</p>
+            </div>
+            <div class="button-row">
+              <button id="stats-import-games" type="button">Load old game files</button>
+            </div>
+            <input id="stats-import-file" type="file" accept="application/json,.json" class="hidden" multiple />
+            <p id="stats-import-message" class="message" role="status"></p>
+            <ul id="saved-games-list" class="saved-games-list"></ul>
+          </div>
+          <div class="card">
+            <div class="panel-header compact">
+              <h3>Game details</h3>
+              <p>Review any saved game log later without re-entering it.</p>
+            </div>
+            <div id="saved-game-detail" class="saved-game-detail"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
