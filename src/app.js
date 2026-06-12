@@ -1,3 +1,6 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SUPABASE_CONFIG } from "./supabaseConfig.js";
+
 import {
   DEFAULT_TEAM_NAME,
   FIELD_POSITIONS,
@@ -23,7 +26,12 @@ const STORAGE_KEYS = {
   lineup: "softball-lineup-draft",
   savedGames: "softball-saved-games",
   currentGame: "softball-current-game",
+  syncMeta: "softball-sync-meta",
 };
+
+const SHARED_STATE_BUCKET = "shared";
+
+const localSyncMeta = readStorage(STORAGE_KEYS.syncMeta, {});
 
 const state = {
   roster: readStorage(STORAGE_KEYS.roster, []),
@@ -35,6 +43,15 @@ const state = {
   statsSort: { key: "rbi", direction: "desc" },
 };
 
+const syncState = {
+  client: null,
+  ready: false,
+  saveTimer: null,
+  pendingPayload: null,
+  pendingUpdatedAt: null,
+  localUpdatedAt: typeof localSyncMeta?.updatedAt === "string" ? localSyncMeta.updatedAt : null,
+};
+
 const tabButtons = [...document.querySelectorAll(".tab")];
 const tabPanels = [...document.querySelectorAll(".tab-panel")];
 const sortButtons = [...document.querySelectorAll(".sort-button")];
@@ -44,6 +61,7 @@ const exportDataButton = document.querySelector("#export-data");
 const importDataButton = document.querySelector("#import-data");
 const importFileInput = document.querySelector("#import-file");
 const storageMessage = document.querySelector("#storage-message");
+const cloudMessage = document.querySelector("#cloud-message");
 const lineupPool = document.querySelector("#lineup-pool");
 const dailyLineup = document.querySelector("#daily-lineup");
 const lineupSummary = document.querySelector("#lineup-summary");
@@ -527,6 +545,12 @@ function mergeSavedGames(existingGames, incomingGames) {
 }
 
 function persistState() {
+  const updatedAt = new Date().toISOString();
+  persistLocalState(updatedAt);
+  queueCloudSave(updatedAt);
+}
+
+function persistLocalState(updatedAt = new Date().toISOString()) {
   localStorage.setItem(STORAGE_KEYS.roster, JSON.stringify(state.roster));
   localStorage.setItem(STORAGE_KEYS.lineup, JSON.stringify(state.lineup));
   localStorage.setItem(STORAGE_KEYS.savedGames, JSON.stringify(state.savedGames));
@@ -535,6 +559,159 @@ function persistState() {
   } else {
     localStorage.removeItem(STORAGE_KEYS.currentGame);
   }
+  localStorage.setItem(STORAGE_KEYS.syncMeta, JSON.stringify({ updatedAt }));
+  syncState.localUpdatedAt = updatedAt;
+}
+
+function buildStateSnapshot() {
+  return {
+    version: 1,
+    roster: state.roster,
+    lineupDraft: state.lineup,
+    savedGames: state.savedGames,
+    currentGame: state.currentGame,
+  };
+}
+
+function applyStateSnapshot(snapshot) {
+  state.roster = Array.isArray(snapshot?.roster) ? snapshot.roster : [];
+  state.lineup = Array.isArray(snapshot?.lineupDraft)
+    ? snapshot.lineupDraft
+    : Array.isArray(snapshot?.lineup)
+      ? snapshot.lineup
+      : [];
+  state.savedGames = normalizeSavedGames(snapshot?.savedGames || []);
+  state.currentGame = normalizeGame(snapshot?.currentGame);
+  state.editingEventIndex = null;
+  state.selectedSavedGameIndex = 0;
+}
+
+function hasStateData(snapshot) {
+  return Boolean(
+    snapshot?.currentGame
+      || snapshot?.roster?.length
+      || snapshot?.lineupDraft?.length
+      || snapshot?.lineup?.length
+      || snapshot?.savedGames?.length,
+  );
+}
+
+function isSupabaseConfigured() {
+  return Boolean(SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey);
+}
+
+function updateCloudMessage(message) {
+  if (cloudMessage) {
+    cloudMessage.textContent = message;
+  }
+}
+
+function queueCloudSave(updatedAt = new Date().toISOString()) {
+  if (!isSupabaseConfigured()) {
+    return;
+  }
+
+  syncState.pendingPayload = buildStateSnapshot();
+  syncState.pendingUpdatedAt = updatedAt;
+
+  if (!syncState.ready || !syncState.client) {
+    updateCloudMessage("Cloud sync pending while the app initializes the shared cloud connection.");
+    return;
+  }
+
+  window.clearTimeout(syncState.saveTimer);
+  syncState.saveTimer = window.setTimeout(() => {
+    void flushCloudSave();
+  }, 400);
+}
+
+async function flushCloudSave() {
+  if (!syncState.ready || !syncState.client || !syncState.pendingPayload) {
+    return;
+  }
+
+  const payload = syncState.pendingPayload;
+  const updatedAt = syncState.pendingUpdatedAt || new Date().toISOString();
+  syncState.pendingPayload = null;
+  syncState.pendingUpdatedAt = null;
+
+  updateCloudMessage("Cloud sync saving...");
+
+  const { error } = await syncState.client.from("app_state").upsert(
+    {
+      bucket: SHARED_STATE_BUCKET,
+      payload,
+      updated_at: updatedAt,
+    },
+    { onConflict: "bucket" },
+  );
+
+  if (error) {
+    syncState.pendingPayload = payload;
+    syncState.pendingUpdatedAt = updatedAt;
+    updateCloudMessage(`Cloud sync unavailable: ${error.message}. Local saves still work.`);
+    return;
+  }
+
+  updateCloudMessage("Cloud sync saved to Supabase.");
+}
+
+async function initializeSupabase() {
+  if (!isSupabaseConfigured()) {
+    updateCloudMessage("Cloud sync is off. Add your Supabase URL and anon key in src/supabaseConfig.js.");
+    return;
+  }
+
+  try {
+    updateCloudMessage("Cloud sync connecting...");
+    syncState.client = createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+    syncState.ready = true;
+    await syncFromCloud();
+
+    if (syncState.pendingPayload) {
+      await flushCloudSave();
+    } else {
+      updateCloudMessage("Cloud sync connected.");
+    }
+  } catch (error) {
+    updateCloudMessage(`Cloud sync unavailable: ${getErrorMessage(error)}. Local saves still work.`);
+  }
+}
+
+async function syncFromCloud() {
+  if (!syncState.client) {
+    return;
+  }
+
+  const localSnapshot = buildStateSnapshot();
+  const localUpdatedAt = Date.parse(syncState.localUpdatedAt || 0);
+  const { data, error } = await syncState.client
+    .from("app_state")
+    .select("payload, updated_at")
+    .eq("bucket", SHARED_STATE_BUCKET)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  const remoteUpdatedAt = Date.parse(data?.updated_at || 0);
+  if (data?.payload && remoteUpdatedAt > localUpdatedAt) {
+    applyStateSnapshot(data.payload);
+    persistLocalState(data.updated_at);
+    render();
+    updateCloudMessage("Cloud sync loaded your latest Supabase data.");
+    return;
+  }
+
+  if (hasStateData(localSnapshot) && (!data?.payload || localUpdatedAt >= remoteUpdatedAt)) {
+    syncState.pendingPayload = localSnapshot;
+    syncState.pendingUpdatedAt = syncState.localUpdatedAt || new Date().toISOString();
+  }
+}
+
+function getErrorMessage(error) {
+  return error instanceof Error ? error.message : "Unexpected error";
 }
 
 function getRosterPlayer(playerId) {
@@ -1224,3 +1401,4 @@ function escapeHtml(value) {
 }
 
 render();
+void initializeSupabase();
