@@ -70,7 +70,7 @@
         <div class="card storage-card">
           <div class="panel-header compact">
             <h3>Storage and backup</h3>
-            <p>Data auto-saves in this browser. Export a JSON backup to your PC and import it later on any machine.</p>
+            <p>Data auto-saves in this browser. With Supabase configured, the same data also syncs to your cloud-backed account.</p>
           </div>
           <div class="button-row">
             <button id="export-data" type="button">Export data</button>
@@ -78,6 +78,7 @@
           </div>
           <input id="import-file" type="file" accept="application/json,.json" class="hidden" />
           <p id="storage-message" class="message" role="status"></p>
+          <p id="cloud-message" class="message" role="status"></p>
         </div>
       </section>
 

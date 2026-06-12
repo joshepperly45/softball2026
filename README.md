@@ -54,6 +54,32 @@ Notes:
 - If you switch devices, use the app's per-game JSON files or full backup export/import to move data.
 - Once Pages is enabled, you do not need to run `npm run serve` from your PC to use the site.
 
+## Supabase cloud sync
+
+This app can now sync roster data, lineup drafts, saved games, and the active game to Supabase while still keeping a browser-local backup.
+
+### How auth works
+
+- The browser uses your Supabase project URL plus the public anon key from `src/supabaseConfig.js`.
+- No person has to manually log in. The app talks directly to one shared `app_state` row using the public anon key.
+- The database is intentionally shared across all visitors to the site, so every browser reads and writes the same roster, lineup, and game data.
+- Row Level Security limits writes to the shared `bucket = 'shared'` row used by this app.
+- The Supabase service role key is not used here and should never be shipped to the browser. That key is only for trusted server code.
+
+### Setup
+
+1. Create a Supabase project.
+2. Run the SQL in `supabase/schema.sql` in the Supabase SQL editor.
+3. If you previously set up the anonymous-per-user version, run `supabase/migrate-to-shared.sql` instead so the table is rebuilt for shared access.
+4. Copy `src/supabaseConfig.js` and fill in your project URL and anon key.
+5. Start the app with `npm run serve` or deploy it as a static site.
+
+Notes:
+
+- This is a public-write design. Anyone who can load the site can change the shared data.
+- Because the app also keeps browser-local state, your current device can repopulate the shared row after you run the shared migration.
+- Browser storage remains in place as an offline fallback and backup cache.
+
 ## Tests
 
 ```bash
