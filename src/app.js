@@ -755,6 +755,43 @@ function removeLineupPlayer(playerId) {
   render();
 }
 
+function deleteSavedGame(index) {
+  const game = state.savedGames[index];
+  if (!game) {
+    return;
+  }
+
+  if (statsImportMessage) {
+    statsImportMessage.textContent = "";
+  }
+
+  const password = window.prompt("Enter the admin password to delete this saved game.");
+  if (password === null) {
+    return;
+  }
+
+  if (password !== "admin") {
+    if (statsImportMessage) {
+      statsImportMessage.textContent = "Incorrect password. Game was not deleted.";
+    }
+    return;
+  }
+
+  const confirmed = window.confirm(`Delete ${formatSavedGameLabel(game)}? This cannot be undone.`);
+  if (!confirmed) {
+    return;
+  }
+
+  state.savedGames = state.savedGames.filter((_, gameIndex) => gameIndex !== index);
+  state.selectedSavedGameIndex = Math.max(0, Math.min(state.selectedSavedGameIndex, state.savedGames.length - 1));
+  persistState();
+  renderStats();
+
+  if (statsImportMessage) {
+    statsImportMessage.textContent = `Deleted ${formatSavedGameLabel(game)}.`;
+  }
+}
+
 function updateLineupPosition(index, position) {
   if (!state.lineup[index]) {
     return;
@@ -1053,18 +1090,28 @@ function getBattingPreview(game, count) {
   }).filter(Boolean);
 }
 
+function getEventDetail(event) {
+  if (event.type === "play") {
+    return `${event.batter.name} · RBI ${event.rbi}${event.extraOuts ? ` · ${event.extraOuts} extra out${event.extraOuts === 1 ? "" : "s"}` : ""}${event.runsScored.length ? ` · ${event.runsScored.length} run${event.runsScored.length === 1 ? "" : "s"} scored` : ""}`;
+  }
+
+  if (event.type === "opponent-half") {
+    return `${event.runs} opponent run${event.runs === 1 ? "" : "s"}`;
+  }
+
+  if (event.type === "state-adjustment") {
+    return `Batter ${event.batterIndex + 1} · Outs ${event.outs}`;
+  }
+
+  return `${event.fromPlayer.name} -> ${event.toPlayer.name}`;
+}
+
 function renderEventLog(game) {
   const items = game.events.map((event, index) => ({ event, index })).reverse();
   eventLog.innerHTML = items.length
     ? items
         .map(({ event, index }) => {
-          const detail = event.type === "play"
-            ? `${event.batter.name} · RBI ${event.rbi}${event.extraOuts ? ` · ${event.extraOuts} extra out${event.extraOuts === 1 ? "" : "s"}` : ""}${event.runsScored.length ? ` · ${event.runsScored.length} run${event.runsScored.length === 1 ? "" : "s"} scored` : ""}`
-            : event.type === "opponent-half"
-              ? `${event.runs} opponent run${event.runs === 1 ? "" : "s"}`
-              : event.type === "state-adjustment"
-                ? `Batter ${event.batterIndex + 1} · Outs ${event.outs}`
-                : `${event.fromPlayer.name} -> ${event.toPlayer.name}`;
+          const detail = getEventDetail(event);
           const canEdit = event.type === "play" || event.type === "opponent-half" || event.type === "state-adjustment";
           return `
             <li>
@@ -1321,10 +1368,13 @@ function renderSavedGames() {
       const result = getGameResult(game);
       return `
         <li>
-          <button type="button" class="saved-game-button ${index === state.selectedSavedGameIndex ? "active" : ""}" data-saved-game="${index}">
-            <strong>${escapeHtml(formatSavedGameLabel(game))}</strong>
-            <span>${result} · ${game.score.team}-${game.score.opponent}</span>
-          </button>
+          <div class="saved-game-row">
+            <button type="button" class="saved-game-button ${index === state.selectedSavedGameIndex ? "active" : ""}" data-saved-game="${index}">
+              <strong>${escapeHtml(formatSavedGameLabel(game))}</strong>
+              <span>${result} · ${game.score.team}-${game.score.opponent}</span>
+            </button>
+            <button type="button" class="danger" data-delete-saved-game="${index}">Delete</button>
+          </div>
         </li>
       `;
     })
@@ -1334,6 +1384,11 @@ function renderSavedGames() {
     button.addEventListener("click", () => {
       state.selectedSavedGameIndex = Number(button.dataset.savedGame);
       renderStats();
+    });
+  });
+  savedGamesList.querySelectorAll("[data-delete-saved-game]").forEach((button) => {
+    button.addEventListener("click", () => {
+      deleteSavedGame(Number(button.dataset.deleteSavedGame));
     });
   });
 
@@ -1350,7 +1405,7 @@ function renderSavedGames() {
               (event) => `
                 <li>
                   <strong>${escapeHtml(event.half === "top" ? "Top" : "Bottom")} ${event.inning} · ${escapeHtml(getEventLabel(event))}</strong>
-                  <div class="muted">Score ${event.scoreAfterEvent.team}-${event.scoreAfterEvent.opponent}</div>
+                  <div class="muted">${escapeHtml(getEventDetail(event))} · Score ${event.scoreAfterEvent.team}-${event.scoreAfterEvent.opponent}</div>
                 </li>
               `,
             )

@@ -545,6 +545,13 @@ td {
   gap: 0.75rem;
 }
 
+.saved-game-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
 .saved-game-button {
   width: 100%;
   text-align: left;
@@ -653,6 +660,10 @@ td {
 
   .saved-game-button {
     padding: 0.85rem 0.9rem;
+  }
+
+  .saved-game-row {
+    grid-template-columns: 1fr;
   }
 
   th,
